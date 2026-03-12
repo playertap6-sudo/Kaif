@@ -1,202 +1,13 @@
 /* ══════════════════════════════════════════
-   Engineering Physiology Portfolio — JS
-   app.js
+   Engineering Physiology Portfolio — app.js
+   Open access — no authentication required
 ══════════════════════════════════════════ */
-
-/* ── AUTH CONFIG ──────────────────────────
-   ⚠️  Replace with your real Google Client ID
-   Get it from: https://console.cloud.google.com
-   → APIs & Services → Credentials → OAuth 2.0 Client ID
-   Add your hosted URL as an Authorized JavaScript Origin
-──────────────────────────────────────────── */
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com';
-
-/* ── AUTHORIZED EMAILS ────────────────────
-   Add or remove emails here at any time.
-──────────────────────────────────────────── */
-const AUTHORIZED_EMAILS = [
-  'ma3709@srmist.edu.in',
-  // 'nextuser@srmist.edu.in',  ← add more here
-];
-
-/* ── AUTH STATE ── */
-let currentUser = null;   // { email, name, picture } or null
-let isAdmin     = false;
-let googleClient = null;
-let pendingNav   = null;  // page to navigate to after successful sign-in
-
-/* ════════════════════════════════════════
-   GOOGLE IDENTITY SERVICES
-════════════════════════════════════════ */
-function initGoogleAuth() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    setTimeout(initGoogleAuth, 500);
-    return;
-  }
-
-  // Token (access-token) flow — fallback
-  googleClient = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: 'openid email profile',
-    callback: handleGoogleToken,
-  });
-
-  // ID (credential/JWT) flow — primary
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleCredentialResponse,
-    auto_select: false,
-    cancel_on_tap_outside: true,
-  });
-
-  restoreSession();
-}
-
-function triggerGoogleSignIn() {
-  if (!googleClient) { toast('Google auth not loaded yet. Try again.', 'error'); return; }
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      googleClient.requestAccessToken();
-    }
-  });
-}
-
-function handleCredentialResponse(response) {
-  const payload = parseJwt(response.credential);
-  if (!payload) { toast('Sign-in failed. Try again.', 'error'); return; }
-  processSignIn({ email: payload.email, name: payload.name, picture: payload.picture });
-}
-
-function handleGoogleToken(tokenResponse) {
-  if (tokenResponse.error) { toast('Sign-in cancelled.', 'error'); return; }
-  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-  })
-  .then(r => r.json())
-  .then(info => processSignIn({ email: info.email, name: info.name, picture: info.picture }))
-  .catch(() => toast('Could not fetch account info.', 'error'));
-}
-
-function processSignIn(user) {
-  const authorized = AUTHORIZED_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
-  if (!authorized) {
-    document.getElementById('deniedBox').classList.add('show');
-    toast('⛔ Account not authorized.', 'error');
-    return;
-  }
-  currentUser = user;
-  isAdmin     = true;
-  localStorage.setItem('physio_auth_user', JSON.stringify(user));
-  closeAuthModal();
-  applyAuthState();
-  toast(`✅ Welcome, ${user.name.split(' ')[0]}! You have admin access.`);
-  if (pendingNav) { nav(pendingNav); pendingNav = null; }
-}
-
-function signOut() {
-  currentUser = null;
-  isAdmin     = false;
-  localStorage.removeItem('physio_auth_user');
-  if (typeof google !== 'undefined' && google.accounts) {
-    google.accounts.id.disableAutoSelect();
-  }
-  applyAuthState();
-  nav('home');
-  toast('Signed out successfully.');
-}
-
-function restoreSession() {
-  try {
-    const stored = localStorage.getItem('physio_auth_user');
-    if (stored) {
-      const user = JSON.parse(stored);
-      if (user && user.email && AUTHORIZED_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase())) {
-        currentUser = user;
-        isAdmin     = true;
-        applyAuthState();
-      } else {
-        localStorage.removeItem('physio_auth_user');
-      }
-    }
-  } catch (e) { /* ignore */ }
-}
-
-function parseJwt(token) {
-  try {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(base64));
-  } catch (e) { return null; }
-}
-
-/* ════════════════════════════════════════
-   AUTH UI STATE
-════════════════════════════════════════ */
-function applyAuthState() {
-  const authArea       = document.getElementById('authArea');
-  const navUpload      = document.getElementById('navUpload');
-  const readonlyBanner = document.getElementById('readonlyBanner');
-  const heroUploadBtn  = document.getElementById('heroUploadBtn');
-  const addBtnBar      = document.getElementById('addBtnBar');
-
-  if (isAdmin && currentUser) {
-    authArea.innerHTML = `
-      <div class="user-pill">
-        <img src="${currentUser.picture || ''}" alt=""
-          onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2216%22 fill=%22%23a78bfa%22/><text x=%2216%22 y=%2221%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2216%22>${(currentUser.name || 'A')[0]}</text></svg>'">
-        <span class="uname">${currentUser.name || currentUser.email}</span>
-        <span class="badge-admin">Admin</span>
-      </div>
-      <button class="btn-signout" onclick="signOut()">Sign out</button>`;
-    navUpload.style.display      = '';
-    readonlyBanner.style.display = 'none';
-    heroUploadBtn.style.display  = '';
-    addBtnBar.style.display      = '';
-    document.querySelectorAll('.btn-del').forEach(b => b.style.display = '');
-    document.getElementById('lockedUpload').style.display  = 'none';
-    document.getElementById('uploadContent').style.display = 'block';
-  } else {
-    authArea.innerHTML = `
-      <button class="btn-signin-nav" onclick="showAuthModal()">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px" alt="">
-        Sign in
-      </button>`;
-    navUpload.style.display      = 'none';
-    readonlyBanner.style.display = '';
-    heroUploadBtn.style.display  = 'none';
-    addBtnBar.style.display      = 'none';
-    document.querySelectorAll('.btn-del').forEach(b => b.style.display = 'none');
-    document.getElementById('lockedUpload').style.display  = 'block';
-    document.getElementById('uploadContent').style.display = 'none';
-  }
-}
-
-/* ════════════════════════════════════════
-   AUTH MODAL
-════════════════════════════════════════ */
-function showAuthModal() {
-  document.getElementById('deniedBox').classList.remove('show');
-  document.getElementById('authModalOv').style.display = 'flex';
-}
-
-function closeAuthModal() {
-  document.getElementById('authModalOv').style.display = 'none';
-}
-
-document.getElementById('authModalOv').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeAuthModal();
-});
-
-/* ── ACCESS GUARD ── */
-function requireAdmin(page) {
-  if (isAdmin) { nav(page); }
-  else { pendingNav = page; showAuthModal(); }
-}
 
 /* ════════════════════════════════════════
    DATA LAYER  (localStorage)
 ════════════════════════════════════════ */
-const DB   = 'physio_portfolio';
-const getA = () => { try { return JSON.parse(localStorage.getItem(DB)) || []; } catch { return []; } };
+const DB    = 'physio_portfolio';
+const getA  = () => { try { return JSON.parse(localStorage.getItem(DB)) || []; } catch { return []; } };
 const saveA = d => localStorage.setItem(DB, JSON.stringify(d));
 const addA  = a => {
   const arr = getA();
@@ -251,15 +62,14 @@ function renderAsgn(items) {
       <span class="ei">📂</span>
       <h3>No assignments yet</h3>
       <p>Upload your first assignment using the Upload page.</p>
-      ${isAdmin ? `<button class="btn btn-grad" onclick="nav('upload')">Go to Upload</button>` : ''}
+      <button class="btn btn-grad" onclick="nav('upload')">Go to Upload</button>
     </div>`;
     return;
   }
   g.innerHTML = items.map(a => {
-    const img    = a.images && a.images.length
+    const img = a.images && a.images.length
       ? `<img src="${a.images[0]}" alt="${a.title}" loading="lazy">`
       : `<div class="asgn-placeholder">${EMOJI[a.category] || '📋'}</div>`;
-    const delBtn = `<button class="btn-del" onclick="handleDel(${a.id})" style="${isAdmin ? '' : 'display:none'}">Delete</button>`;
     return `<div class="asgn-card" data-cat="${a.category || 'other'}">
       ${img}
       <div class="asgn-body">
@@ -268,7 +78,7 @@ function renderAsgn(items) {
         <p>${a.description || 'No description provided.'}</p>
         <div class="asgn-actions">
           <button class="btn-view2" onclick="openMod(${a.id})">View Details</button>
-          ${delBtn}
+          <button class="btn-del"   onclick="handleDel(${a.id})">Delete</button>
         </div>
       </div>
     </div>`;
@@ -284,7 +94,6 @@ function filterA(btn, cat) {
 }
 
 function handleDel(id) {
-  if (!isAdmin) { toast('⛔ You do not have permission to delete.', 'error'); return; }
   if (!confirm('Delete this assignment?')) return;
   delA(id);
   const filtered = curFilter === 'all' ? getA() : getA().filter(a => a.category === curFilter);
@@ -300,7 +109,7 @@ function renderProj() {
       <span class="ei">🔬</span>
       <h3>No projects yet</h3>
       <p>Upload an assignment with category "Project".</p>
-      ${isAdmin ? `<button class="btn btn-grad" onclick="nav('upload')">Add Project</button>` : ''}
+      <button class="btn btn-grad" onclick="nav('upload')">Add Project</button>
     </div>`;
     return;
   }
@@ -316,6 +125,7 @@ function renderProj() {
         <p>${a.description || ''}</p>
         <div class="asgn-actions">
           <button class="btn-view2" onclick="openMod(${a.id})">View Details</button>
+          <button class="btn-del"   onclick="handleDel(${a.id})">Delete</button>
         </div>
       </div>
     </div>`;
@@ -334,7 +144,7 @@ function renderGal() {
       <span class="ei">🖼️</span>
       <h3>No images yet</h3>
       <p>Upload assignments with images and they'll appear here.</p>
-      ${isAdmin ? `<button class="btn btn-grad" onclick="nav('upload')">Upload Now</button>` : ''}
+      <button class="btn btn-grad" onclick="nav('upload')">Upload Now</button>
     </div>`;
     return;
   }
@@ -367,7 +177,7 @@ function openMod(id) {
   document.getElementById('mMeta').innerHTML = `
     <span>📅 ${a.createdAt}</span>
     ${a.images ? `<span>🖼️ ${a.images.length} image(s)</span>` : ''}
-    ${a.files  ? `<span>📎 ${a.files.length} file(s)</span>`  : ''}`;
+    ${a.files  ? `<span>📎 ${a.files.length} file(s)</span>`   : ''}`;
   document.getElementById('detailModal').classList.add('open');
 }
 
@@ -398,16 +208,16 @@ function switchImgTab(btn, id) {
 /* ════════════════════════════════════════
    UPLOAD STATE
 ════════════════════════════════════════ */
-let upImages   = [];
-let capImages  = [];
+let upImages    = [];
+let capImages   = [];
 let attachFiles = [];
-let camStream  = null;
+let camStream   = null;
 
 const allImgs = () => [...upImages, ...capImages];
 
 function updateDots() {
   const v = document.getElementById('aTitle').value.trim().length > 0;
-  document.getElementById('tCt').textContent  = document.getElementById('aTitle').value.length;
+  document.getElementById('tCt').textContent = document.getElementById('aTitle').value.length;
   document.getElementById('d1').className = 'sdot' + (v ? ' done' : ' act');
   document.getElementById('d2').className = 'sdot' + (v ? ' act' : '');
 }
@@ -462,11 +272,11 @@ async function startCam() {
     camStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
     });
-    document.getElementById('camVid').srcObject       = camStream;
-    document.getElementById('btnCapture').disabled    = false;
-    document.getElementById('btnStop').disabled       = false;
-    document.getElementById('btnStart').disabled      = true;
-    document.getElementById('camSt').textContent      = '🔴 Live';
+    document.getElementById('camVid').srcObject    = camStream;
+    document.getElementById('btnCapture').disabled = false;
+    document.getElementById('btnStop').disabled    = false;
+    document.getElementById('btnStart').disabled   = true;
+    document.getElementById('camSt').textContent   = '🔴 Live';
   } catch {
     toast('Camera access denied or unavailable.', 'error');
   }
@@ -543,7 +353,6 @@ function rmDoc(i) { attachFiles.splice(i, 1); renderDocList(); }
 
 /* ── SAVE ASSIGNMENT ── */
 function saveAsgn() {
-  if (!isAdmin) { toast('⛔ You must be signed in as admin.', 'error'); return; }
   const t = document.getElementById('aTitle').value.trim();
   if (!t) { toast('Please enter a title.', 'error'); document.getElementById('aTitle').focus(); return; }
 
@@ -557,11 +366,11 @@ function saveAsgn() {
 
   toast('✅ Assignment saved and published!');
 
-  // Reset form
+  /* Reset form */
   ['aTitle', 'aDesc'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('aCat').value  = 'report';
-  document.getElementById('tCt').textContent = '0';
-  document.getElementById('dCt').textContent = '0';
+  document.getElementById('aCat').value         = 'report';
+  document.getElementById('tCt').textContent    = '0';
+  document.getElementById('dCt').textContent    = '0';
   upImages = []; capImages = []; attachFiles = [];
   document.getElementById('prevGrid').innerHTML = '';
   document.getElementById('docList').innerHTML  = '';
@@ -599,8 +408,7 @@ function renderMgCards() {
 }
 
 function mgDel(id) {
-  if (!isAdmin) { toast('⛔ Not authorized.', 'error'); return; }
-  if (!confirm('Delete?')) return;
+  if (!confirm('Delete this assignment?')) return;
   delA(id);
   renderMgCards();
   toast('Deleted.');
@@ -619,5 +427,3 @@ function sendMsg() {
    INIT
 ════════════════════════════════════════ */
 document.getElementById('statCount').textContent = getA().length;
-applyAuthState();
-initGoogleAuth();
