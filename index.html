@@ -4,47 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Engineering Physiology Portfolio</title>
-
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
-
-  <!-- Google Identity Services (auth) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- Portfolio Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-<!-- ══════════════════════════════════════
-     AUTH MODAL  (sign-in prompt)
-══════════════════════════════════════ -->
-<div class="auth-modal-ov" id="authModalOv" style="display:none">
-  <div class="auth-modal">
-    <span class="lock-icon">🔐</span>
-    <h2>Admin Sign-In Required</h2>
-    <p>
-      This area is restricted to authorized users only.<br>
-      Sign in with your <strong>SRMIST Google account</strong> to upload and manage assignments.
-    </p>
-    <div class="denied-box" id="deniedBox">
-      ⛔ Access denied. Your account is not authorized to manage this portfolio.
-      Contact the portfolio owner to request access.
-    </div>
-    <button class="google-btn" onclick="triggerGoogleSignIn()">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-      Continue with Google
-    </button>
-    <button class="cancel-btn" onclick="closeAuthModal()">Cancel — Go back</button>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════
      HEADER
 ══════════════════════════════════════ -->
 <header>
   <h1 onclick="nav('home')">Engineering Physiology Portfolio</h1>
-
   <nav id="mainNav">
     <a onclick="nav('home')" class="active">Home</a>
     <a onclick="nav('about')">About</a>
@@ -52,28 +21,9 @@
     <a onclick="nav('projects')">Projects</a>
     <a onclick="nav('gallery')">Gallery</a>
     <a onclick="nav('contact')">Contact</a>
-    <!-- Upload: only visible to admin (controlled by JS) -->
-    <a onclick="requireAdmin('upload')" class="upload-link" id="navUpload" style="display:none">+ Upload</a>
+    <a onclick="nav('upload')" class="upload-link">+ Upload</a>
   </nav>
-
-  <div class="auth-area" id="authArea">
-    <!-- Populated by applyAuthState() in app.js -->
-    <button class="btn-signin-nav" onclick="showAuthModal()">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px" alt="">
-      Sign in
-    </button>
-  </div>
 </header>
-
-<!-- READ-ONLY BANNER (guests only) -->
-<div class="readonly-banner" id="readonlyBanner">
-  <span class="rb-icon">👁️</span>
-  <span>
-    <strong>Read-only mode</strong> — You can browse and view all content.
-    Sign in with an authorized account to upload or manage assignments.
-  </span>
-  <button class="rb-btn" onclick="showAuthModal()">Sign in →</button>
-</div>
 
 <!-- ══════════════════════════════════════
      HOME
@@ -93,16 +43,13 @@
     </p>
     <div class="hero-actions">
       <button class="btn btn-white" onclick="nav('assignments')">Explore My Work</button>
-      <!-- Visible only to admin -->
-      <button class="btn btn-outline" id="heroUploadBtn" onclick="requireAdmin('upload')" style="display:none">
-        + Add Assignment
-      </button>
+      <button class="btn btn-outline" onclick="nav('upload')">+ Add Assignment</button>
     </div>
   </section>
 
   <div class="section" style="padding-bottom:0">
     <div class="section-label">Portfolio Stats</div>
-    <div class="stats-row" id="statsRow">
+    <div class="stats-row">
       <div class="stat"><div class="num" id="statCount">0</div><div class="lbl">Assignments</div></div>
       <div class="stat"><div class="num">3</div><div class="lbl">Subject Areas</div></div>
       <div class="stat"><div class="num">1</div><div class="lbl">Semester</div></div>
@@ -135,11 +82,11 @@
       <h3>Upload &amp; Manage</h3>
       <p>Add assignments with images, documents, or scan via camera. Instantly published to the portfolio.</p>
       <br>
-      <button class="btn btn-grad btn-sm" onclick="requireAdmin('upload')">Go to Upload →</button>
+      <button class="btn btn-grad btn-sm" onclick="nav('upload')">Go to Upload →</button>
     </div>
   </div>
 
-</div><!-- /page-home -->
+</div>
 
 <!-- ══════════════════════════════════════
      ASSIGNMENTS
@@ -157,13 +104,12 @@
     <button class="filter-btn" onclick="filterA(this,'presentation')">Presentations</button>
     <button class="filter-btn" onclick="filterA(this,'project')">Projects</button>
     <button class="filter-btn" onclick="filterA(this,'other')">Other</button>
-    <!-- Visible only to admin -->
-    <button class="add-btn-bar" id="addBtnBar" onclick="requireAdmin('upload')">＋ Add Assignment</button>
+    <button class="add-btn-bar" onclick="nav('upload')">＋ Add Assignment</button>
   </div>
 
   <div class="asgn-grid" id="asgnGrid"></div>
 
-</div><!-- /page-assignments -->
+</div>
 
 <!-- ══════════════════════════════════════
      PROJECTS
@@ -177,7 +123,7 @@
 
   <div class="asgn-grid" id="projGrid"></div>
 
-</div><!-- /page-projects -->
+</div>
 
 <!-- ══════════════════════════════════════
      GALLERY
@@ -191,7 +137,7 @@
 
   <div class="gal-grid" id="galGrid"></div>
 
-</div><!-- /page-gallery -->
+</div>
 
 <!-- ══════════════════════════════════════
      ABOUT
@@ -224,7 +170,7 @@
     </div>
   </div>
 
-</div><!-- /page-about -->
+</div>
 
 <!-- ══════════════════════════════════════
      CONTACT
@@ -240,7 +186,6 @@
     <div class="section-label">Say Hello</div>
     <h2>Get In Touch</h2>
     <p class="sub">Have a question about this portfolio or want to collaborate? Drop a message.</p>
-
     <div class="form-card">
       <div class="form-group">
         <label>Your Name</label>
@@ -258,10 +203,10 @@
     </div>
   </div>
 
-</div><!-- /page-contact -->
+</div>
 
 <!-- ══════════════════════════════════════
-     UPLOAD & MANAGE  (admin only)
+     UPLOAD & MANAGE
 ══════════════════════════════════════ -->
 <div id="page-upload" class="page">
 
@@ -270,22 +215,10 @@
     <p>Add assignments with text, images, documents, or live camera scan.</p>
   </div>
 
-  <!-- LOCKED STATE — shown to guests -->
-  <div class="locked-upload" id="lockedUpload">
-    <span class="lock-big">🔒</span>
-    <h2>Admin Access Required</h2>
-    <p>
-      Uploading and managing assignments is restricted to authorized users only.
-      Sign in with your SRMIST Google account to get access.
-    </p>
-    <button class="btn btn-grad" onclick="showAuthModal()">🔑 Sign in with Google</button>
-  </div>
-
-  <!-- UPLOAD CONTENT — shown to admin only -->
-  <div class="upload-wrap" id="uploadContent" style="display:none">
+  <div class="upload-wrap">
 
     <div class="how-box">
-      <h3>📖 How to Manage Your Files</h3>
+      <h3>📖 How to Add an Assignment</h3>
       <div class="how-steps">
         <div class="how-step"><div class="sn">1</div><div>Fill in the assignment <strong>title, category, and description.</strong></div></div>
         <div class="how-step"><div class="sn">2</div><div>Add <strong>images</strong> by drag &amp; drop, file browse, or <strong>Live Camera</strong> to scan notes.</div></div>
@@ -298,7 +231,7 @@
     <!-- Main tabs -->
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab(this,'tab-upload')">📤 Upload New</button>
-      <button class="tab-btn" onclick="switchTab(this,'tab-manage')">🗂️ Manage Existing</button>
+      <button class="tab-btn"        onclick="switchTab(this,'tab-manage')">🗂️ Manage Existing</button>
     </div>
 
     <!-- ── UPLOAD TAB ── -->
@@ -315,13 +248,11 @@
         <div class="section-label">Step 1 — Basic Info</div>
         <h2>Assignment Details</h2>
         <p class="sub">Give your assignment a clear title and description.</p>
-
         <div class="form-group">
           <label>Assignment Title *</label>
           <input type="text" id="aTitle" placeholder="e.g., Human Nervous System Study" maxlength="120" oninput="updateDots()">
           <div class="char-ct"><span id="tCt">0</span>/120</div>
         </div>
-
         <div class="form-group">
           <label>Category</label>
           <select id="aCat">
@@ -331,7 +262,6 @@
             <option value="other">📁 Other</option>
           </select>
         </div>
-
         <div class="form-group">
           <label>Description</label>
           <textarea id="aDesc" placeholder="Briefly describe this assignment..." maxlength="1000"
@@ -345,12 +275,10 @@
         <div class="section-label">Step 2 — Images</div>
         <h2>Add Images</h2>
         <p class="sub">Upload photos or scan handwritten notes using the camera.</p>
-
         <div class="tabs" style="margin-bottom:14px">
           <button class="tab-btn active" onclick="switchImgTab(this,'itab-file')">📁 Upload Files</button>
           <button class="tab-btn"        onclick="switchImgTab(this,'itab-cam')">📷 Live Camera</button>
         </div>
-
         <div id="itab-file" class="tab-pane active">
           <div class="file-zone" id="imgZone">
             <input type="file" id="imgInput" accept="image/*" multiple>
@@ -359,7 +287,6 @@
             <p style="font-size:.78rem;margin-top:5px">JPG, PNG, WebP, GIF — multiple files OK</p>
           </div>
         </div>
-
         <div id="itab-cam" class="tab-pane">
           <div class="cam-wrap">
             <video id="camVid" autoplay playsinline muted></video>
@@ -376,7 +303,6 @@
           </p>
           <div class="cap-prev" id="capPrev"></div>
         </div>
-
         <div class="prev-grid" id="prevGrid"></div>
       </div>
 
@@ -385,14 +311,12 @@
         <div class="section-label">Step 3 — Attachments (Optional)</div>
         <h2>Attach Documents</h2>
         <p class="sub">PDF, Word, PowerPoint — linked for download on assignments page.</p>
-
         <div class="file-zone" id="docZone">
           <input type="file" id="docInput" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.xlsx,.csv">
           <div class="file-zone-icon">📎</div>
           <p><strong>Click to browse</strong> or drag &amp; drop documents</p>
           <p style="font-size:.78rem;margin-top:5px">PDF, DOCX, PPTX, XLSX, TXT — max 10 MB each</p>
         </div>
-
         <div id="docList"></div>
       </div>
 
@@ -403,13 +327,13 @@
     <!-- ── MANAGE TAB ── -->
     <div id="tab-manage" class="tab-pane">
       <div class="form-card">
-        <h2 style="margin-bottom:5px">Your Assignments</h2>
-        <p class="sub">All saved assignments. Delete or view any of them here.</p>
+        <h2 style="margin-bottom:5px">All Assignments</h2>
+        <p class="sub">View or delete any saved assignment here.</p>
         <div class="mg-cards" id="mgCards"></div>
       </div>
     </div>
 
-  </div><!-- /uploadContent -->
+  </div><!-- /upload-wrap -->
 
 </div><!-- /page-upload -->
 
@@ -451,8 +375,6 @@
   </p>
 </footer>
 
-<!-- Portfolio JS (load last so DOM is ready) -->
 <script src="app.js"></script>
-
 </body>
 </html>
