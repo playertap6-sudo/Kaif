@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engineering Physiology Portfolio</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
+  <!-- Google Identity Services (auth) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- Portfolio Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     AUTH MODAL  (sign-in prompt)
+══════════════════════════════════════ -->
+<div class="auth-modal-ov" id="authModalOv" style="display:none">
+  <div class="auth-modal">
+    <span class="lock-icon">🔐</span>
+    <h2>Admin Sign-In Required</h2>
+    <p>
+      This area is restricted to authorized users only.<br>
+      Sign in with your <strong>SRMIST Google account</strong> to upload and manage assignments.
+    </p>
+    <div class="denied-box" id="deniedBox">
+      ⛔ Access denied. Your account is not authorized to manage this portfolio.
+      Contact the portfolio owner to request access.
+    </div>
+    <button class="google-btn" onclick="triggerGoogleSignIn()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Continue with Google
+    </button>
+    <button class="cancel-btn" onclick="closeAuthModal()">Cancel — Go back</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HEADER
+══════════════════════════════════════ -->
+<header>
+  <h1 onclick="nav('home')">Engineering Physiology Portfolio</h1>
+
+  <nav id="mainNav">
+    <a onclick="nav('home')" class="active">Home</a>
+    <a onclick="nav('about')">About</a>
+    <a onclick="nav('assignments')">Assignments</a>
+    <a onclick="nav('projects')">Projects</a>
+    <a onclick="nav('gallery')">Gallery</a>
+    <a onclick="nav('contact')">Contact</a>
+    <!-- Upload: only visible to admin (controlled by JS) -->
+    <a onclick="requireAdmin('upload')" class="upload-link" id="navUpload" style="display:none">+ Upload</a>
+  </nav>
+
+  <div class="auth-area" id="authArea">
+    <!-- Populated by applyAuthState() in app.js -->
+    <button class="btn-signin-nav" onclick="showAuthModal()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px" alt="">
+      Sign in
+    </button>
+  </div>
+</header>
+
+<!-- READ-ONLY BANNER (guests only) -->
+<div class="readonly-banner" id="readonlyBanner">
+  <span class="rb-icon">👁️</span>
+  <span>
+    <strong>Read-only mode</strong> — You can browse and view all content.
+    Sign in with an authorized account to upload or manage assignments.
+  </span>
+  <button class="rb-btn" onclick="showAuthModal()">Sign in →</button>
+</div>
+
+<!-- ══════════════════════════════════════
+     HOME
+══════════════════════════════════════ -->
+<div id="page-home" class="page active">
+
+  <section class="hero">
+    <div class="hero-badges">
+      <span class="badge">🎓 SRM Institute of Science &amp; Technology</span>
+      <span class="badge">🔬 Engineering Physiology</span>
+      <span class="badge">📚 Academic Portfolio</span>
+    </div>
+    <h1 class="hero-title">Engineering &amp;<br>Human Physiology</h1>
+    <p class="hero-sub">
+      A living academic portfolio documenting assignments, experiments, and the
+      intersection of engineering with biological systems.
+    </p>
+    <div class="hero-actions">
+      <button class="btn btn-white" onclick="nav('assignments')">Explore My Work</button>
+      <!-- Visible only to admin -->
+      <button class="btn btn-outline" id="heroUploadBtn" onclick="requireAdmin('upload')" style="display:none">
+        + Add Assignment
+      </button>
+    </div>
+  </section>
+
+  <div class="section" style="padding-bottom:0">
+    <div class="section-label">Portfolio Stats</div>
+    <div class="stats-row" id="statsRow">
+      <div class="stat"><div class="num" id="statCount">0</div><div class="lbl">Assignments</div></div>
+      <div class="stat"><div class="num">3</div><div class="lbl">Subject Areas</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">Semester</div></div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:32px">
+    <div class="section-label">What You'll Find Here</div>
+    <h2>My Engineering Physiology Work</h2>
+    <p>
+      This portfolio documents assignments, experiments, and projects related to engineering
+      physiology — exploring how engineering principles apply to biological and physiological systems.
+    </p>
+    <button class="btn btn-grad" onclick="nav('assignments')">View All Assignments</button>
+  </div>
+
+  <div class="features-grid">
+    <div class="feat-card">
+      <span class="feat-icon">📝</span>
+      <h3>Assignments</h3>
+      <p>Detailed reports on physiology topics — nervous system, muscle physiology, cardiovascular systems, and more.</p>
+    </div>
+    <div class="feat-card">
+      <span class="feat-icon">🔬</span>
+      <h3>Projects</h3>
+      <p>Experiments and practical projects applying engineering methods to understand physiological systems.</p>
+    </div>
+    <div class="feat-card">
+      <span class="feat-icon">🗂️</span>
+      <h3>Upload &amp; Manage</h3>
+      <p>Add assignments with images, documents, or scan via camera. Instantly published to the portfolio.</p>
+      <br>
+      <button class="btn btn-grad btn-sm" onclick="requireAdmin('upload')">Go to Upload →</button>
+    </div>
+  </div>
+
+</div><!-- /page-home -->
+
+<!-- ══════════════════════════════════════
+     ASSIGNMENTS
+══════════════════════════════════════ -->
+<div id="page-assignments" class="page">
+
+  <div class="page-hdr">
+    <h1>Course Assignments</h1>
+    <p>All uploaded assignments — add new ones using the Upload page.</p>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="filterA(this,'all')">All</button>
+    <button class="filter-btn" onclick="filterA(this,'report')">Reports</button>
+    <button class="filter-btn" onclick="filterA(this,'presentation')">Presentations</button>
+    <button class="filter-btn" onclick="filterA(this,'project')">Projects</button>
+    <button class="filter-btn" onclick="filterA(this,'other')">Other</button>
+    <!-- Visible only to admin -->
+    <button class="add-btn-bar" id="addBtnBar" onclick="requireAdmin('upload')">＋ Add Assignment</button>
+  </div>
+
+  <div class="asgn-grid" id="asgnGrid"></div>
+
+</div><!-- /page-assignments -->
+
+<!-- ══════════════════════════════════════
+     PROJECTS
+══════════════════════════════════════ -->
+<div id="page-projects" class="page">
+
+  <div class="page-hdr">
+    <h1>Projects</h1>
+    <p>Physiology-related experiments and engineering projects.</p>
+  </div>
+
+  <div class="asgn-grid" id="projGrid"></div>
+
+</div><!-- /page-projects -->
+
+<!-- ══════════════════════════════════════
+     GALLERY
+══════════════════════════════════════ -->
+<div id="page-gallery" class="page">
+
+  <div class="page-hdr">
+    <h1>Physiology Gallery</h1>
+    <p>All images from uploaded assignments — click to view full size.</p>
+  </div>
+
+  <div class="gal-grid" id="galGrid"></div>
+
+</div><!-- /page-gallery -->
+
+<!-- ══════════════════════════════════════
+     ABOUT
+══════════════════════════════════════ -->
+<div id="page-about" class="page">
+
+  <div class="page-hdr">
+    <h1>About</h1>
+    <p>A brief introduction.</p>
+  </div>
+
+  <div class="about-wrap">
+    <div class="section-label">Who I Am</div>
+    <h2>Engineering Physiology Student</h2>
+    <p>
+      I'm an undergraduate student at SRM Institute of Science and Technology, exploring the exciting
+      intersection of engineering principles and human physiology. This portfolio is a living document
+      of my academic journey.
+    </p>
+    <p>
+      Engineering Physiology bridges the gap between biological systems and engineering design.
+      From understanding how neurons fire to analyzing cardiovascular dynamics, every topic opens new
+      perspectives on how the human body functions like a complex, self-regulating machine.
+    </p>
+    <div class="info-grid">
+      <div class="info-card"><div class="lbl">Institution</div><div class="val">SRM Institute of Science &amp; Technology</div></div>
+      <div class="info-card"><div class="lbl">Course</div><div class="val">Engineering Physiology</div></div>
+      <div class="info-card"><div class="lbl">Portfolio Type</div><div class="val">Academic Documentation</div></div>
+      <div class="info-card"><div class="lbl">Content</div><div class="val">Assignments, Projects, Gallery</div></div>
+    </div>
+  </div>
+
+</div><!-- /page-about -->
+
+<!-- ══════════════════════════════════════
+     CONTACT
+══════════════════════════════════════ -->
+<div id="page-contact" class="page">
+
+  <div class="page-hdr">
+    <h1>Contact</h1>
+    <p>Get in touch or send a message.</p>
+  </div>
+
+  <div class="contact-wrap">
+    <div class="section-label">Say Hello</div>
+    <h2>Get In Touch</h2>
+    <p class="sub">Have a question about this portfolio or want to collaborate? Drop a message.</p>
+
+    <div class="form-card">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="cName" placeholder="Enter your name">
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="text" id="cEmail" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>Message</label>
+        <textarea id="cMsg" placeholder="Write your message here..." style="min-height:120px"></textarea>
+      </div>
+      <button class="submit-btn" onclick="sendMsg()">Send Message →</button>
+    </div>
+  </div>
+
+</div><!-- /page-contact -->
+
+<!-- ══════════════════════════════════════
+     UPLOAD & MANAGE  (admin only)
+══════════════════════════════════════ -->
+<div id="page-upload" class="page">
+
+  <div class="page-hdr">
+    <h1>Upload &amp; Manage</h1>
+    <p>Add assignments with text, images, documents, or live camera scan.</p>
+  </div>
+
+  <!-- LOCKED STATE — shown to guests -->
+  <div class="locked-upload" id="lockedUpload">
+    <span class="lock-big">🔒</span>
+    <h2>Admin Access Required</h2>
+    <p>
+      Uploading and managing assignments is restricted to authorized users only.
+      Sign in with your SRMIST Google account to get access.
+    </p>
+    <button class="btn btn-grad" onclick="showAuthModal()">🔑 Sign in with Google</button>
+  </div>
+
+  <!-- UPLOAD CONTENT — shown to admin only -->
+  <div class="upload-wrap" id="uploadContent" style="display:none">
+
+    <div class="how-box">
+      <h3>📖 How to Manage Your Files</h3>
+      <div class="how-steps">
+        <div class="how-step"><div class="sn">1</div><div>Fill in the assignment <strong>title, category, and description.</strong></div></div>
+        <div class="how-step"><div class="sn">2</div><div>Add <strong>images</strong> by drag &amp; drop, file browse, or <strong>Live Camera</strong> to scan notes.</div></div>
+        <div class="how-step"><div class="sn">3</div><div>Optionally attach <strong>PDF / DOCX / PPTX</strong> files for download.</div></div>
+        <div class="how-step"><div class="sn">4</div><div>Click <strong>Save Assignment</strong> — instantly appears on Assignments page.</div></div>
+        <div class="how-step"><div class="sn">5</div><div>Use <strong>Manage Existing</strong> tab to view or delete saved assignments.</div></div>
+      </div>
+    </div>
+
+    <!-- Main tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-upload')">📤 Upload New</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-manage')">🗂️ Manage Existing</button>
+    </div>
+
+    <!-- ── UPLOAD TAB ── -->
+    <div id="tab-upload" class="tab-pane active">
+
+      <div class="step-dots">
+        <div class="sdot act" id="d1"></div>
+        <div class="sdot"     id="d2"></div>
+        <div class="sdot"     id="d3"></div>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="form-card">
+        <div class="section-label">Step 1 — Basic Info</div>
+        <h2>Assignment Details</h2>
+        <p class="sub">Give your assignment a clear title and description.</p>
+
+        <div class="form-group">
+          <label>Assignment Title *</label>
+          <input type="text" id="aTitle" placeholder="e.g., Human Nervous System Study" maxlength="120" oninput="updateDots()">
+          <div class="char-ct"><span id="tCt">0</span>/120</div>
+        </div>
+
+        <div class="form-group">
+          <label>Category</label>
+          <select id="aCat">
+            <option value="report">📄 Report</option>
+            <option value="presentation">📊 Presentation</option>
+            <option value="project">🔬 Project</option>
+            <option value="other">📁 Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="aDesc" placeholder="Briefly describe this assignment..." maxlength="1000"
+            oninput="document.getElementById('dCt').textContent=this.value.length"></textarea>
+          <div class="char-ct"><span id="dCt">0</span>/1000</div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="form-card">
+        <div class="section-label">Step 2 — Images</div>
+        <h2>Add Images</h2>
+        <p class="sub">Upload photos or scan handwritten notes using the camera.</p>
+
+        <div class="tabs" style="margin-bottom:14px">
+          <button class="tab-btn active" onclick="switchImgTab(this,'itab-file')">📁 Upload Files</button>
+          <button class="tab-btn"        onclick="switchImgTab(this,'itab-cam')">📷 Live Camera</button>
+        </div>
+
+        <div id="itab-file" class="tab-pane active">
+          <div class="file-zone" id="imgZone">
+            <input type="file" id="imgInput" accept="image/*" multiple>
+            <div class="file-zone-icon">🖼️</div>
+            <p><strong>Click to browse</strong> or drag &amp; drop images here</p>
+            <p style="font-size:.78rem;margin-top:5px">JPG, PNG, WebP, GIF — multiple files OK</p>
+          </div>
+        </div>
+
+        <div id="itab-cam" class="tab-pane">
+          <div class="cam-wrap">
+            <video id="camVid" autoplay playsinline muted></video>
+            <canvas id="capCanvas"></canvas>
+            <div class="cam-ctrl">
+              <button id="btnStart"   onclick="startCam()">▶ Start Camera</button>
+              <button id="btnCapture" onclick="capPhoto()" disabled>📸 Capture</button>
+              <button id="btnStop"    onclick="stopCam()"  disabled>⏹ Stop</button>
+              <span class="cam-status" id="camSt">Camera off</span>
+            </div>
+          </div>
+          <p style="font-size:.8rem;color:var(--text-muted);margin-top:9px">
+            📱 Works on Android &amp; iOS — rear camera auto-selected on mobile.
+          </p>
+          <div class="cap-prev" id="capPrev"></div>
+        </div>
+
+        <div class="prev-grid" id="prevGrid"></div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="form-card">
+        <div class="section-label">Step 3 — Attachments (Optional)</div>
+        <h2>Attach Documents</h2>
+        <p class="sub">PDF, Word, PowerPoint — linked for download on assignments page.</p>
+
+        <div class="file-zone" id="docZone">
+          <input type="file" id="docInput" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.xlsx,.csv">
+          <div class="file-zone-icon">📎</div>
+          <p><strong>Click to browse</strong> or drag &amp; drop documents</p>
+          <p style="font-size:.78rem;margin-top:5px">PDF, DOCX, PPTX, XLSX, TXT — max 10 MB each</p>
+        </div>
+
+        <div id="docList"></div>
+      </div>
+
+      <button class="submit-btn" onclick="saveAsgn()">✅ Save Assignment — Publish to Portfolio</button>
+
+    </div><!-- /tab-upload -->
+
+    <!-- ── MANAGE TAB ── -->
+    <div id="tab-manage" class="tab-pane">
+      <div class="form-card">
+        <h2 style="margin-bottom:5px">Your Assignments</h2>
+        <p class="sub">All saved assignments. Delete or view any of them here.</p>
+        <div class="mg-cards" id="mgCards"></div>
+      </div>
+    </div>
+
+  </div><!-- /uploadContent -->
+
+</div><!-- /page-upload -->
+
+<!-- ══════════════════════════════════════
+     LIGHTBOX
+══════════════════════════════════════ -->
+<div class="lb" id="lb" onclick="closeLb()">
+  <button class="lb-close" onclick="closeLb()">✕</button>
+  <img id="lbImg" src="" alt="">
+</div>
+
+<!-- ══════════════════════════════════════
+     DETAIL MODAL
+══════════════════════════════════════ -->
+<div class="modal-ov" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h2 id="mTitle"></h2>
+      <p  id="mCat"></p>
+      <button class="modal-close" onclick="closeMod()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-imgs"  id="mImgs"></div>
+      <p   class="modal-text"  id="mText"></p>
+      <div class="modal-files" id="mFiles"></div>
+      <div class="modal-meta"  id="mMeta"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    Engineering Physiology Portfolio &nbsp;·&nbsp;
+    <span>SRM Institute of Science &amp; Technology</span>
+  </p>
+</footer>
+
+<!-- Portfolio JS (load last so DOM is ready) -->
+<script src="app.js"></script>
+
+</body>
+</html>
